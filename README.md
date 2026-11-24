@@ -47,12 +47,29 @@ Formulario: campos de título, descripción y prioridad.
 La navegación debe tener textos comprensibles.
 Un id inexistente debe mostrar un mensaje en vez de cerrar la app.
 
-### Contrato de API que necesitaremos
-GET /tasks        listar tareas
-GET /tasks/:id    consultar detalle
-POST /tasks       crear tarea
-PATCH /tasks/:id  actualizar tarea
-DELETE /tasks/:id eliminar tarea
+### API de tareas (sesión 7)
 
-La API concreta se elegirá después. Estas rutas son requisitos, no
-direcciones de un servidor ya conectado.
+- **API usada:** JSONPlaceholder, una API pública de datos de prueba.
+- **URL exacta:** `https://jsonplaceholder.typicode.com/todos?userId=[TU_USERID]`
+- **Método:** GET (solo consulta).
+- **Parámetro `userId`:** limita los resultados a las tareas de un usuario. Está definido en la constante `userId` de `TaskApiService`. Valor elegido: **[TU_USERID]**.
+- **Campos que llegan de la API:** `userId`, `id`, `title` y `completed` (que TaskFlow guarda como `isCompleted`).
+- **Valores que TaskFlow completa por defecto:** `description` ("Sin descripción (API)") y `priority` ("Sin prioridad (API)"). No vienen del servidor.
+- **Marcar una tarea como completada es local:** solo cambia la copia en memoria. JSONPlaceholder no guarda cambios, así que al actualizar o reiniciar la app la marca desaparece.
+
+## Estados de la lista (sesión 8)
+
+La pantalla "Mis tareas" distingue cuatro situaciones. `TasksViewModel` guarda el estado (`isLoading`, `errorMessage` y `isEmpty`) y la vista lo dibuja con `context.watch`.
+
+| Estado | Qué se muestra | Cómo lo provoqué |
+|---|---|---|
+| Carga | Indicador circular de progreso | Al abrir la app o pulsar Actualizar. Para verlo con más calma, limité la velocidad de red en [emulador / DevTools de Chrome → Network → Slow 3G]. No agregué esperas artificiales al código. |
+| Éxito | Una tarjeta por cada tarea | Con internet y un `userId` válido ([1]). |
+| Vacío | "Todavía no hay tareas para mostrar." y botón **Actualizar** | Cambié temporalmente `userId` a 9999 en `TaskApiService`, reinicié la app y la API respondió con una lista vacía. Luego restauré el valor válido. |
+| Error | "No se pudieron cargar las tareas." y botón **Reintentar** | Desactivé internet en el navegador, con la pestaña Network en "Offline" y pulsé Actualizar. |
+
+**Reintentar:** después del error, reactivé internet y pulsé **Reintentar**. La lista volvió sin reiniciar la app, porque el botón vuelve a llamar a `loadTasks()`.
+
+**Diferencia entre vacío y error:** una lista vacía es una respuesta válida del servidor. Un error significa que no se sabe qué tareas hay. Por eso el vacío ofrece **Actualizar** y el error ofrece **Reintentar**.
+
+**Actualizar:** el botón de la barra superior y el gesto de deslizar hacia abajo (RefreshIndicator) vuelven a consultar el servidor. Una tarea marcada como completada puede volver a su valor original, porque el cambio es solo local.
